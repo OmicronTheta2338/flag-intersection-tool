@@ -16,7 +16,7 @@ from PIL import Image
 WHITE = (255, 255, 255, 255)
 TRANSPARENT = (0, 0, 0, 0)
 
-DEFAULT_TOLERANCE = 100  # Euclidean RGB distance threshold (0 = exact match only)
+DEFAULT_TOLERANCE = 150  # Euclidean RGB distance threshold (0 = exact match only)
 # For reference: max possible Euclidean RGB distance = sqrt(3 * 255^2) ~= 441
 
 
