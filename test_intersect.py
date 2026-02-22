@@ -8,7 +8,7 @@ Run with:
 
 from PIL import Image
 from pathlib import Path
-from intersect import intersect_flags, intersect_many, load_flag, save_result, TRANSPARENT, WHITE, DEFAULT_TOLERANCE
+from intersect import intersect_flags, intersect_many, load_flag, save_result, TRANSPARENT, GREY, DEFAULT_TOLERANCE
 import tempfile
 import os
 
@@ -29,7 +29,7 @@ def make_image(pixels: list[tuple], size=(4, 2)) -> Image.Image:
 
 RED  = (255,   0,   0, 255)
 BLUE = (  0,   0, 255, 255)
-FILL_W = (255, 255, 255, 255)
+FILL_W = GREY  # background fill colour
 
 
 # ---------------------------------------------------------------------------
@@ -70,7 +70,7 @@ def test_white_bg_option():
     """With white_bg=True, differing pixels should be white, not transparent."""
     pixels_a = [RED,  BLUE] * 4
     pixels_b = [BLUE, BLUE] * 4
-    expected  = [WHITE, BLUE] * 4
+    expected  = [GREY, BLUE] * 4
     result = intersect_flags(make_image(pixels_a), make_image(pixels_b), white_bg=True)
     assert list(result.getdata()) == expected, f"White-bg test failed: {list(result.getdata())}"
     print("PASS: test_white_bg_option")

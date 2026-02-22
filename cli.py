@@ -2,20 +2,20 @@
 cli.py - Command-line interface for the Flag Intersection Tool.
 
 Usage:
-    python cli.py <flag1> <flag2> [<flag3> ...] [--output PATH] [--tolerance N] [--white-bg]
+    python cli.py <flag1> <flag2> [<flag3> ...] [--output PATH] [--tolerance N] [--grey-bg]
 
 Examples:
     python cli.py flags/fr.png flags/nl.png
     python cli.py flags/fr.png flags/de.png flags/be.png
-    python cli.py flags/fr.png flags/nl.png --tolerance 30 --output output/result.png
-    python cli.py flags/fr.bmp flags/de.bmp --white-bg
+    python cli.py flags/fr.png flags/nl.png flags/de.png --grey-bg
+    python cli.py flags/fr.bmp flags/de.bmp --output output/result.bmp --grey-bg
 """
 
 import argparse
 import sys
 from pathlib import Path
 
-from intersect import load_flag, intersect_many, save_result, DEFAULT_TOLERANCE
+from intersect import load_flag, intersect_many, save_result, DEFAULT_TOLERANCE, GREY
 
 
 def derive_output_path(flag_paths: list[Path]) -> Path:
@@ -60,9 +60,9 @@ def main() -> None:
         ),
     )
     parser.add_argument(
-        "--white-bg",
+        "--grey-bg",
         action="store_true",
-        help="Use white background for non-matching pixels instead of transparency.",
+        help="Use a grey (128,128,128) background for non-matching pixels instead of transparency.",
     )
 
     args = parser.parse_args()
@@ -92,7 +92,7 @@ def main() -> None:
         print(f"  {p.name}: {img.size[0]}x{img.size[1]}")
 
     print(f"Computing intersection of {n} flags (tolerance={args.tolerance})...")
-    result = intersect_many(images, white_bg=args.white_bg, tolerance=args.tolerance)
+    result = intersect_many(images, white_bg=args.grey_bg, tolerance=args.tolerance)
 
     print(f"Saving result to: {output_path}")
     save_result(result, output_path, fmt)

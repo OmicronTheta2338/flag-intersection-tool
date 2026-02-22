@@ -13,7 +13,7 @@ from pathlib import Path
 from PIL import Image
 
 
-WHITE = (255, 255, 255, 255)
+GREY = (128, 128, 128, 255)
 TRANSPARENT = (0, 0, 0, 0)
 
 DEFAULT_TOLERANCE = 150  # Euclidean RGB distance threshold (0 = exact match only)
@@ -57,7 +57,7 @@ def intersect_flags(
     w = max(img_a.width, img_b.width)
     h = max(img_a.height, img_b.height)
 
-    fill = WHITE if white_bg else TRANSPARENT
+    fill = GREY if white_bg else TRANSPARENT
     threshold_sq = tolerance * tolerance  # compare squared distances to avoid sqrt
 
     # Paste each flag onto a blank (transparent) canvas of the union size.
@@ -125,7 +125,7 @@ def save_result(img: Image.Image, output_path: str | Path, fmt: str) -> Path:
 
     # Formats that don't support alpha - flatten onto white
     if fmt_upper in ("BMP", "JPEG", "JPG"):
-        background = Image.new("RGBA", img.size, WHITE)
+        background = Image.new("RGBA", img.size, GREY)
         background.paste(img, mask=img.split()[3])  # use alpha channel as mask
         img = background.convert("RGB")
         img.save(str(output_path), format=fmt_upper if fmt_upper != "JPG" else "JPEG")
