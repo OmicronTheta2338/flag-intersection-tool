@@ -14,18 +14,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from intersect import load_flag, intersect_flags, save_result, DEFAULT_SIZE
-
-
-def parse_size(s: str) -> tuple[int, int]:
-    """Parse a WxH string into a (width, height) tuple."""
-    try:
-        w, h = s.lower().split("x")
-        return int(w), int(h)
-    except (ValueError, AttributeError):
-        raise argparse.ArgumentTypeError(
-            f"Invalid size '{s}'. Expected format: WxH, e.g. 1200x800"
-        )
+from intersect import load_flag, intersect_flags, save_result
 
 
 def derive_output_path(flag_a: Path, flag_b: Path) -> Path:
@@ -55,13 +44,6 @@ def main() -> None:
         help="Output file path. Defaults to output/<a>_AND_<b>.<ext>.",
     )
     parser.add_argument(
-        "--size", "-s",
-        type=parse_size,
-        default=DEFAULT_SIZE,
-        metavar="WxH",
-        help=f"Resize both flags to this resolution before comparing. Default: {DEFAULT_SIZE[0]}x{DEFAULT_SIZE[1]}.",
-    )
-    parser.add_argument(
         "--white-bg",
         action="store_true",
         help="Use white background for non-matching pixels instead of transparency.",
@@ -85,9 +67,9 @@ def main() -> None:
     if not fmt:
         fmt = "PNG"
 
-    print(f"Loading flags at {args.size[0]}x{args.size[1]}...")
-    img_a = load_flag(args.flag_a, size=args.size)
-    img_b = load_flag(args.flag_b, size=args.size)
+    print("Loading flags at native resolution...")
+    img_a = load_flag(args.flag_a)
+    img_b = load_flag(args.flag_b)
 
     print("Computing intersection...")
     result = intersect_flags(img_a, img_b, white_bg=args.white_bg)
