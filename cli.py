@@ -2,46 +2,51 @@
 cli.py - Command-line interface for the Flag Intersection Tool.
 
 Usage:
-    python cli.py <flag_a> <flag_b> [--output PATH] [--tolerance N] [--white-bg]
+    python cli.py <flag1> <flag2> [<flag3> ...] [--output PATH] [--tolerance N] [--white-bg]
 
 Examples:
     python cli.py flags/fr.png flags/nl.png
-    python cli.py flags/fr.png flags/de.png --tolerance 30
-    python cli.py flags/fr.bmp flags/de.bmp --output output/result.bmp --white-bg
+    python cli.py flags/fr.png flags/de.png flags/be.png
+    python cli.py flags/fr.png flags/nl.png --tolerance 30 --output output/result.png
+    python cli.py flags/fr.bmp flags/de.bmp --white-bg
 """
 
 import argparse
 import sys
 from pathlib import Path
 
-from intersect import load_flag, intersect_flags, save_result, DEFAULT_TOLERANCE
+from intersect import load_flag, intersect_many, save_result, DEFAULT_TOLERANCE
 
 
-def derive_output_path(flag_a: Path, flag_b: Path) -> Path:
-    """Build a default output path from the two input flag names."""
-    stem_a = flag_a.stem
-    stem_b = flag_b.stem
-    ext = flag_a.suffix  # match format of first input
-    return Path("output") / f"{stem_a}_AND_{stem_b}{ext}"
+def derive_output_path(flag_paths: list[Path]) -> Path:
+    """Build a default output path by joining all flag stems with _AND_."""
+    stems = "_AND_".join(p.stem for p in flag_paths)
+    ext = flag_paths[0].suffix  # match format of first input
+    return Path("output") / f"{stems}{ext}"
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="flag-intersect",
         description=(
-            "Perform a pixel-wise logical AND on two flag images.\n"
+            "Perform a pixel-wise logical AND on two or more flag images.\n"
             "Matching pixels are kept; differing pixels become transparent (or white)."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    parser.add_argument("flag_a", type=Path, help="Path to the first flag image.")
-    parser.add_argument("flag_b", type=Path, help="Path to the second flag image.")
+    parser.add_argument(
+        "flags",
+        type=Path,
+        nargs="+",
+        metavar="FLAG",
+        help="Two or more flag image paths to intersect.",
+    )
     parser.add_argument(
         "--output", "-o",
         type=Path,
         default=None,
-        help="Output file path. Defaults to output/<a>_AND_<b>.<ext>.",
+        help="Output file path. Defaults to output/<a>_AND_<b>_AND_...<ext>.",
     )
     parser.add_argument(
         "--tolerance", "-t",
@@ -62,28 +67,32 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # Validate inputs
-    for path, label in [(args.flag_a, "flag_a"), (args.flag_b, "flag_b")]:
+    if len(args.flags) < 2:
+        parser.error("At least 2 flag images are required.")
+
+    # Validate all inputs
+    for path in args.flags:
         if not path.exists():
-            print(f"Error: {label} file not found: {path}", file=sys.stderr)
+            print(f"Error: file not found: {path}", file=sys.stderr)
             sys.exit(1)
         if not path.is_file():
-            print(f"Error: {label} is not a file: {path}", file=sys.stderr)
+            print(f"Error: not a file: {path}", file=sys.stderr)
             sys.exit(1)
 
     # Determine output path & format
-    output_path = args.output or derive_output_path(args.flag_a, args.flag_b)
-    # Format is determined by the OUTPUT extension (or flag_a's extension if default)
-    fmt = output_path.suffix.lstrip(".").upper() or args.flag_a.suffix.lstrip(".").upper()
+    output_path = args.output or derive_output_path(args.flags)
+    fmt = output_path.suffix.lstrip(".").upper() or args.flags[0].suffix.lstrip(".").upper()
     if not fmt:
         fmt = "PNG"
 
-    print("Loading flags at native resolution...")
-    img_a = load_flag(args.flag_a)
-    img_b = load_flag(args.flag_b)
+    n = len(args.flags)
+    print(f"Loading {n} flags at native resolution...")
+    images = [load_flag(p) for p in args.flags]
+    for p, img in zip(args.flags, images):
+        print(f"  {p.name}: {img.size[0]}x{img.size[1]}")
 
-    print(f"Computing intersection (tolerance={args.tolerance})...")
-    result = intersect_flags(img_a, img_b, white_bg=args.white_bg, tolerance=args.tolerance)
+    print(f"Computing intersection of {n} flags (tolerance={args.tolerance})...")
+    result = intersect_many(images, white_bg=args.white_bg, tolerance=args.tolerance)
 
     print(f"Saving result to: {output_path}")
     save_result(result, output_path, fmt)

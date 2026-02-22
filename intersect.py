@@ -16,7 +16,7 @@ from PIL import Image
 WHITE = (255, 255, 255, 255)
 TRANSPARENT = (0, 0, 0, 0)
 
-DEFAULT_TOLERANCE = 10  # Euclidean RGB distance threshold (0 = exact match only)
+DEFAULT_TOLERANCE = 100  # Euclidean RGB distance threshold (0 = exact match only)
 # For reference: max possible Euclidean RGB distance = sqrt(3 * 255^2) ~= 441
 
 
@@ -83,6 +83,31 @@ def intersect_flags(
 
     result = Image.new("RGBA", (w, h))
     result.putdata(result_pixels)
+    return result
+
+
+def intersect_many(
+    images: list[Image.Image],
+    white_bg: bool = False,
+    tolerance: int = DEFAULT_TOLERANCE,
+) -> Image.Image:
+    """
+    Intersect any number of flag images by chaining pairwise intersections.
+
+    Equivalent to: flags[0] AND flags[1] AND flags[2] AND ...
+
+    The result is built left-to-right:
+      step 1: result = intersect(flags[0], flags[1])
+      step 2: result = intersect(result, flags[2])
+      ...
+
+    A minimum of 2 images is required.
+    """
+    if len(images) < 2:
+        raise ValueError(f"At least 2 images are required, got {len(images)}.")
+    result = intersect_flags(images[0], images[1], white_bg=white_bg, tolerance=tolerance)
+    for img in images[2:]:
+        result = intersect_flags(result, img, white_bg=white_bg, tolerance=tolerance)
     return result
 
 
