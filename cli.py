@@ -1,20 +1,20 @@
 """
-cli.py — Command-line interface for the Flag Intersection Tool.
+cli.py - Command-line interface for the Flag Intersection Tool.
 
 Usage:
-    python cli.py <flag_a> <flag_b> [--output PATH] [--size WxH] [--white-bg]
+    python cli.py <flag_a> <flag_b> [--output PATH] [--tolerance N] [--white-bg]
 
 Examples:
-    python cli.py flags/france.png flags/netherlands.png
-    python cli.py flags/a.bmp flags/b.bmp --output output/result.bmp
-    python cli.py flags/a.png flags/b.png --size 800x600 --white-bg
+    python cli.py flags/fr.png flags/nl.png
+    python cli.py flags/fr.png flags/de.png --tolerance 30
+    python cli.py flags/fr.bmp flags/de.bmp --output output/result.bmp --white-bg
 """
 
 import argparse
 import sys
 from pathlib import Path
 
-from intersect import load_flag, intersect_flags, save_result
+from intersect import load_flag, intersect_flags, save_result, DEFAULT_TOLERANCE
 
 
 def derive_output_path(flag_a: Path, flag_b: Path) -> Path:
@@ -44,6 +44,17 @@ def main() -> None:
         help="Output file path. Defaults to output/<a>_AND_<b>.<ext>.",
     )
     parser.add_argument(
+        "--tolerance", "-t",
+        type=int,
+        default=DEFAULT_TOLERANCE,
+        metavar="N",
+        help=(
+            f"Max Euclidean RGB distance for two pixels to be considered matching "
+            f"(0=exact, default={DEFAULT_TOLERANCE}). "
+            f"~10 fixes compression artefacts, ~30 catches similar shades."
+        ),
+    )
+    parser.add_argument(
         "--white-bg",
         action="store_true",
         help="Use white background for non-matching pixels instead of transparency.",
@@ -71,8 +82,8 @@ def main() -> None:
     img_a = load_flag(args.flag_a)
     img_b = load_flag(args.flag_b)
 
-    print("Computing intersection...")
-    result = intersect_flags(img_a, img_b, white_bg=args.white_bg)
+    print(f"Computing intersection (tolerance={args.tolerance})...")
+    result = intersect_flags(img_a, img_b, white_bg=args.white_bg, tolerance=args.tolerance)
 
     print(f"Saving result to: {output_path}")
     save_result(result, output_path, fmt)
